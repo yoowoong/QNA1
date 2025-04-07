@@ -119,8 +119,9 @@ function App() {
                     isAnonymous: !user
                 };
 
-                await db.collection('questions').doc(questionId).update({
-                    answers: arrayUnion(answer)
+                const questionRef = db.collection('questions').doc(questionId);
+                await questionRef.update({
+                    answers: firebase.firestore.FieldValue.arrayUnion(answer)
                 });
 
                 setNewAnswer({ ...newAnswer, [questionId]: '' });
@@ -248,5 +249,4 @@ function App() {
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(<App />);
-
 
