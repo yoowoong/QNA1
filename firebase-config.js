@@ -17,5 +17,5 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 
 // Firestore 설정
-const serverTimestamp = firebase.firestore.FieldValue.serverTimestamp;
+const serverTimestamp = firebase.firestore.FieldValue.serverTimestamp();
 const arrayUnion = firebase.firestore.FieldValue.arrayUnion;
