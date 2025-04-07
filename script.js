@@ -1,6 +1,6 @@
 const { useState, useEffect } = React;
 
-function LoginForm({ onLogin }) {
+function LoginForm() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
@@ -83,29 +83,15 @@ function App() {
         return () => unsubscribe();
     }, []);
 
-    // 로그인/로그아웃 처리
-    const handleAuth = async () => {
-        if (user) {
-            try {
-                await auth.signOut();
-            } catch (error) {
-                console.error("로그아웃 실패:", error);
-            }
-        } else {
-            // 로그인 페이지로 이동하거나 팝업을 표시할 수 있습니다
-            alert('로그인하면 내가 작성한 글을 삭제할 수 있습니다.');
-        }
-    };
-
     // 질문 등록
     const handleSubmitQuestion = async (e) => {
         e.preventDefault();
-        if (newQuestion.trim() && userName.trim()) {
+        if (newQuestion.trim() && (user || userName.trim())) {
             try {
                 await db.collection('questions').add({
                     text: newQuestion,
                     answers: [],
-                    date: firebase.firestore.FieldValue.serverTimestamp(),
+                    date: serverTimestamp(),
                     userId: user ? user.uid : null,
                     userEmail: user ? user.email : userName,
                     isAnonymous: !user
@@ -124,17 +110,19 @@ function App() {
     const handleSubmitAnswer = async (questionId) => {
         if (newAnswer[questionId]?.trim() && (user || userName.trim())) {
             try {
-                const questionRef = db.collection('questions').doc(questionId);
-                await questionRef.update({
-                    answers: firebase.firestore.FieldValue.arrayUnion({
-                        id: Date.now(),
-                        text: newAnswer[questionId],
-                        date: firebase.firestore.FieldValue.serverTimestamp(),
-                        userId: user ? user.uid : null,
-                        userEmail: user ? user.email : userName,
-                        isAnonymous: !user
-                    })
+                const answer = {
+                    id: Date.now().toString(),
+                    text: newAnswer[questionId],
+                    date: new Date().toISOString(),
+                    userId: user ? user.uid : null,
+                    userEmail: user ? user.email : userName,
+                    isAnonymous: !user
+                };
+
+                await db.collection('questions').doc(questionId).update({
+                    answers: arrayUnion(answer)
                 });
+
                 setNewAnswer({ ...newAnswer, [questionId]: '' });
             } catch (error) {
                 console.error("Error adding answer: ", error);
@@ -142,20 +130,6 @@ function App() {
             }
         } else {
             alert('답변과 이름을 모두 입력해주세요.');
-        }
-    };
-
-    // 질문 삭제
-    const handleDeleteQuestion = async (questionId) => {
-        if (!user) {
-            alert('작성자만 삭제할 수 있습니다.');
-            return;
-        }
-        try {
-            await db.collection('questions').doc(questionId).delete();
-        } catch (error) {
-            console.error("Error deleting question: ", error);
-            alert('삭제에 실패했습니다.');
         }
     };
 
@@ -172,26 +146,17 @@ function App() {
             <header className="max-w-4xl mx-auto mb-12">
                 <div className="flex justify-between items-center mb-8">
                     <h1 className="text-4xl font-bold text-purple-600">미용실 Q&A</h1>
-                    <div className="flex items-center space-x-4">
-                        {user ? (
-                            <>
-                                <span className="text-gray-600">{user.email}</span>
-                                <button
-                                    onClick={handleAuth}
-                                    className="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300"
-                                >
-                                    로그아웃
-                                </button>
-                            </>
-                        ) : (
+                    {user && (
+                        <div className="flex items-center space-x-4">
+                            <span className="text-gray-600">{user.email}</span>
                             <button
-                                onClick={handleAuth}
-                                className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
+                                onClick={() => auth.signOut()}
+                                className="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300"
                             >
-                                로그인
+                                로그아웃
                             </button>
-                        )}
-                    </div>
+                        </div>
+                    )}
                 </div>
                 <p className="text-center text-gray-600">미용 관련 질문을 자유롭게 남겨주세요</p>
             </header>
@@ -228,20 +193,12 @@ function App() {
                     {questions.map((question) => (
                         <div key={question.id} className="bg-white rounded-lg shadow-md p-6">
                             <div className="mb-4">
-                                <div className="flex justify-between items-start mb-2">
-                                    <p className="text-lg font-medium text-gray-800">{question.text}</p>
-                                    {user && question.userId === user.uid && (
-                                        <button
-                                            onClick={() => handleDeleteQuestion(question.id)}
-                                            className="text-red-500 hover:text-red-700"
-                                        >
-                                            삭제
-                                        </button>
-                                    )}
-                                </div>
-                                <div className="flex justify-between text-sm text-gray-500">
+                                <p className="text-lg font-medium text-gray-800">{question.text}</p>
+                                <div className="flex justify-between text-sm text-gray-500 mt-2">
                                     <span>{question.userEmail}{question.isAnonymous ? ' (비회원)' : ''}</span>
-                                    <span>{question.date ? new Date(question.date.toDate()).toLocaleString() : '날짜 없음'}</span>
+                                    <span>
+                                        {question.date ? new Date(question.date.seconds * 1000).toLocaleString() : '날짜 없음'}
+                                    </span>
                                 </div>
                             </div>
 
@@ -251,7 +208,7 @@ function App() {
                                         <p className="text-gray-700">{answer.text}</p>
                                         <div className="flex justify-between text-sm text-gray-500 mt-2">
                                             <span>{answer.userEmail}{answer.isAnonymous ? ' (비회원)' : ''}</span>
-                                            <span>{answer.date ? new Date(answer.date.toDate()).toLocaleString() : '날짜 없음'}</span>
+                                            <span>{new Date(answer.date).toLocaleString()}</span>
                                         </div>
                                     </div>
                                 ))}
@@ -289,7 +246,6 @@ function App() {
     );
 }
 
-// ReactDOM.render 대신 createRoot 사용
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(<App />);
 
