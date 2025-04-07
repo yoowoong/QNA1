@@ -1,11 +1,12 @@
 // Firebase 설정
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_AUTH_DOMAIN",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_STORAGE_BUCKET",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSvCpxigqbmJR342v043K8d52GcJbp7zq5aI",
+    authDomain: "dubai6-173806.firebaseapp.com",
+    projectId: "dubai6-173806",
+    storageBucket: "dubai6-173806.firebasestoreage.app",
+    messagingSenderId: "107582305427",
+    appId: "1:107582305427:web:37aaa9c838b6492e42bdef",
+    measurementId: "G-VFFXHQCBRW"
 };
 
 // Firebase 초기화
@@ -16,4 +17,5 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 
 // Firestore 설정
-db.settings({ timestampsInSnapshots: true }); 
+const serverTimestamp = firebase.firestore.FieldValue.serverTimestamp;
+const arrayUnion = firebase.firestore.FieldValue.arrayUnion;
