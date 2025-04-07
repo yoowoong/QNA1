@@ -289,5 +289,8 @@ function App() {
     );
 }
 
-ReactDOM.render(<App />, document.getElementById('root'));
+// ReactDOM.render 대신 createRoot 사용
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+
 
